@@ -124,11 +124,17 @@ import os
 import threading 
 
 class RtbVisualizer:
-    def __init__(self, rtb_robot_model):
-        self.rtb_robot_model = copy.deepcopy(rtb_robot_model)
+    def __init__(self, rtb_robot_model, q_start, 
+                 base_pose = SE3(0, 0, 0), gripper_q = [0.01, 0.01]):
+        # self.rtb_robot_model = copy.deepcopy(rtb_robot_model) # Copy makes robot destroyed in visualizer? odd.
+        self.rtb_robot_model = rtb.models.Panda()
+        self.rtb_robot_model.q = q_start
+        self.rtb_robot_model.base = base_pose
+        self.rtb_robot_model.grippers[0].q = gripper_q
         try:
             self.env = swift.Swift()
             self.env.launch()
+            self.env.add(self.rtb_robot_model)
         except Exception as e:
             print(f"[RTB Process {os.getpid()}] Error launching Swift: {e}")
             return
@@ -160,20 +166,35 @@ def main():
     np.set_printoptions(precision=4, suppress=True,)    
     panda_rtb_model = rtb.models.Panda()
     motion_generator = RuckigMotionGenerator()
-    visualizer = RtbVisualizer(panda_rtb_model)
-    
     panda_rtb_model.q = panda_rtb_model.qr
+    visualizer = RtbVisualizer(panda_rtb_model, panda_rtb_model.qr)
+    
     q_start = panda_rtb_model.q # TODO, get from Franky
     se3_start   = panda_rtb_model.fkine(q_start)
     se3_target = SE3.Tx(0.10) * se3_start  # Forward 10 cm
     
-    # You could do these 3 in a helper function, but it's better to learn and undertand what is going on
-    # This 3-step process is what happens when we call franky_robot.move(cartesian_waypoint)
-    cartesian_traj, dt = motion_generator.calculate_cartesian_pose_trajectory(q_start, se3_start, se3_target) # Interpolation and trajectory parameterization is happening here
+    # I. Visualize the trajectory in simulation
+    # The following 3-step process is what happens when we call franky_robot.move(cartesian_waypoint)
+    cartesian_traj, dt = motion_generator.calculate_cartesian_pose_trajectory(q_start, se3_start, se3_target) # Interpolation and trajectory parameterization
     q_traj = motion_generator.cartesian_pose_to_joint_trajectory(panda_rtb_model, q_start, cartesian_traj)
+    input("Press enter, to run in visualizer\n")
     visualizer.run_joint_trajectory(q_traj, dt)
 
-    visualizer.stop() # Makes sure render thread ends
+    # Note, we will give you a helper function later for projects, 
+    # but for now it's better to learn and undertand what is going on
+    # -------------------------------------------------------------------------------
+
+    # II. Run on real robot
+    yes_or_else = input("To run on the real robot, type [yes], then press enter\n")
+    if yes_or_else != "yes":
+        print("User did not type [yes], will not run on real robot")
+        return visualizer
+
+    print("Ran on real robot")
+    # TODO, run with franky on real robot
+
+    return visualizer
 
 if __name__ == "__main__":
-    main()
+    visualizer = main()
+    visualizer.stop() # Makes sure render thread ends
