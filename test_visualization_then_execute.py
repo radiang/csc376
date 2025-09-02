@@ -61,9 +61,12 @@ def rotation_vector_to_joint_config(model, q_current, RV_new):
     se3_matrix[:3, 3] = translation       
     
     se3_pose = SE3(se3_matrix)
-    q_new = model.ikine_LM(se3_pose, q0=q_current).q
-    q_new[2] = elbow_angle
     
+    q_new = model.ikine_LM(se3_pose, q0=q_current).q
+    # print("se3 before", se3_pose)
+    # q_new[2] = elbow_angle
+    # print("se3 after ik", model.fkine(q_new))
+    # print("elbow after ik", q_new[2])
     return q_new
     
 # Ruckig is used because the internal franky uses ruckig to generate trajectories, and we
@@ -107,8 +110,9 @@ class RuckigMotionGenerator:
         while res == Result.Working:
             res = self.ruckig.update(inp, out) # interpolates to robot vel, acc, and jerk constraints
             cartesian_pose_traj.append(out.new_position)
+            # print(out.new_position)
             out.pass_to_input(inp)
-        return cartesian_pose_traj, self.dt
+        return cartesian_pose_traj, self.dt, N_RV_target
 
     def cartesian_pose_to_joint_trajectory(self, model, q_start, cartesian_pose_traj):
         q_current = copy.deepcopy(q_start)
@@ -167,18 +171,28 @@ def main():
     panda_rtb_model = rtb.models.Panda()
     motion_generator = RuckigMotionGenerator()
     panda_rtb_model.q = panda_rtb_model.qr
-    visualizer = RtbVisualizer(panda_rtb_model, panda_rtb_model.qr)
+    # visualizer = RtbVisualizer(panda_rtb_model, panda_rtb_model.qr)
     
     q_start = panda_rtb_model.q # TODO, get from Franky
     se3_start   = panda_rtb_model.fkine(q_start)
-    se3_target = SE3.Tx(0.10) * se3_start  # Forward 10 cm
+    # print("se3_start", se3_start)
+    se3_target = SE3.Ty(0.10) * se3_start  # Forward 10 cm
+    
+    # Test IK
+    
+    solver = rtb.IK_LM()
+    print(solver)
+    return 
     
     # I. Visualize the trajectory in simulation
     # The following 3-step process is what happens when we call franky_robot.move(cartesian_waypoint)
-    cartesian_traj, dt = motion_generator.calculate_cartesian_pose_trajectory(q_start, se3_start, se3_target) # Interpolation and trajectory parameterization
+    cartesian_traj, dt, n_rv_target = motion_generator.calculate_cartesian_pose_trajectory(q_start, se3_start, se3_target) # Interpolation and trajectory parameterization
     q_traj = motion_generator.cartesian_pose_to_joint_trajectory(panda_rtb_model, q_start, cartesian_traj)
+
+    print("se3_target", se3_target)
+    print("n_rv_target _elbow", n_rv_target[6])
     input("Press enter, to run in visualizer\n")
-    visualizer.run_joint_trajectory(q_traj, dt)
+    # visualizer.run_joint_trajectory(q_traj, dt)
 
     # Note, we will give you a helper function later for projects, 
     # but for now it's better to learn and undertand what is going on
