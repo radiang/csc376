@@ -63,10 +63,10 @@ def rotation_vector_to_joint_config(model, q_current, RV_new):
     se3_pose = SE3(se3_matrix)
     
     q_new = model.ikine_LM(se3_pose, q0=q_current).q
-    # print("se3 before", se3_pose)
-    # q_new[2] = elbow_angle
-    # print("se3 after ik", model.fkine(q_new))
-    # print("elbow after ik", q_new[2])
+    print("se3 before", se3_pose)
+    q_new[2] = elbow_angle
+    print("se3 after ik", model.fkine(q_new))
+    print("elbow after ik", q_new[2])
     return q_new
     
 # Ruckig is used because the internal franky uses ruckig to generate trajectories, and we
