@@ -25,7 +25,7 @@ def normalize_rx_angle(rv_vector):
         rv_normalized[3] = -np.pi - rx
     return rv_normalized
 
-def se3_to_rotation_vector(se3_matrix, elbow_angle):
+def se3_to_rotation_vector(se3_matrix, elbow_angle = None):
     if hasattr(se3_matrix, 'A'):
         se3_array = se3_matrix.A  # SE3 object
     else:
@@ -36,7 +36,10 @@ def se3_to_rotation_vector(se3_matrix, elbow_angle):
 
     rotation = Rotation.from_matrix(rotation_matrix)
     rotvec = rotation.as_rotvec()  # [rx, ry, rz] in radians
-    rotation_vector = np.concatenate([translation, rotvec, [elbow_angle]])
+    if elbow_angle is None:
+        rotation_vector = np.concatenate([translation, rotvec, [0.0]])
+    else:
+        rotation_vector = np.concatenate([translation, rotvec, [elbow_angle]])
     return rotation_vector
 
 def rotation_vector_to_joint_config(model, q_current, RV_new):
@@ -51,7 +54,7 @@ def rotation_vector_to_joint_config(model, q_current, RV_new):
     """
     translation = RV_new[:3]  # [x, y, z]
     rotvec = RV_new[3:6]     # [rx, ry, rz] 
-    elbow_angle = RV_new[6]  # elbow_angle
+    # elbow_angle = RV_new[6]  # elbow_angle
     
     rotation = Rotation.from_rotvec(rotvec)
     rotation_matrix = rotation.as_matrix()
@@ -62,7 +65,7 @@ def rotation_vector_to_joint_config(model, q_current, RV_new):
     
     se3_pose = SE3(se3_matrix)
     q_new = model.ikine_LM(se3_pose, q0=q_current).q
-    q_new[2] = elbow_angle
+    # q_new[2] = elbow_angle
     
     return q_new
     
@@ -71,21 +74,24 @@ def rotation_vector_to_joint_config(model, q_current, RV_new):
 # HOWEVER, the rucking parameters might not be the same so trajectories might slightly be different in
 # sim and in real
 class RuckigMotionGenerator:
-    def __init__(self):
+    def __init__(self, relative_vel_factor = 0.02, relative_acc_factor = 0.01, relative_jerk_factor = 0.05):
 
         self.dt = 0.05
         self.ruckig = Ruckig(dofs=7, delta_time=self.dt)
         self.PANDA_VEL_LIM_CARTESIAN = np.array([3.0, 3.0, 3.0, 2.5, 2.5, 2.5, 2.62])   # m/s
         self.PANDA_ACC_LIM_CARTESIAN =  np.array([9.0, 9.0, 9.0, 17.0, 17.0, 17.0, 10.0]) # m/s²
         self.PANDA_JERK_LIM_CARTESIAN = np.array([4500.0, 4500.0, 4500.0, 8500.0, 8500.0, 8500.0, 5000.0]) # m/s³
-    
+        self.relative_vel_factor = relative_vel_factor
+        self.relative_acc_factor = relative_acc_factor
+        self.relative_jerk_factor = relative_jerk_factor
+
     def calculate_cartesian_pose_trajectory(self,
-                       q_start: np.array, 
                        se3_start: SE3,
                        se3_target: SE3, 
                        rv = 0.02, ra=0.01, rj=0.05):
-        RV_start    = se3_to_rotation_vector(se3_start, q_start[2])
-        RV_target   = se3_to_rotation_vector(se3_target, q_start[2])
+        RV_start    = se3_to_rotation_vector(se3_start)
+        RV_target   = se3_to_rotation_vector(se3_target)
+
         N_RV_start  = normalize_rx_angle(RV_start)
         N_RV_target = normalize_rx_angle(RV_target)
 
@@ -97,9 +103,9 @@ class RuckigMotionGenerator:
         inp.target_position     = N_RV_target
         inp.target_velocity     = [0, 0, 0, 0, 0, 0, 0]
         inp.target_acceleration = [0, 0, 0, 0, 0, 0, 0]
-        inp.max_velocity     = self.PANDA_VEL_LIM_CARTESIAN * rv
-        inp.max_acceleration = self.PANDA_ACC_LIM_CARTESIAN * ra
-        inp.max_jerk         = self.PANDA_JERK_LIM_CARTESIAN * rj
+        inp.max_velocity     = self.PANDA_VEL_LIM_CARTESIAN * self.relative_vel_factor
+        inp.max_acceleration = self.PANDA_ACC_LIM_CARTESIAN * self.relative_acc_factor
+        inp.max_jerk         = self.PANDA_JERK_LIM_CARTESIAN * self.relative_jerk_factor
         inp.enabled = [True, True, True, True, True, True, True]
         res = Result.Working
     
@@ -162,36 +168,59 @@ class RtbVisualizer:
                 print(f"[RTB Process] Error in rendering loop: {e}")
                 break            
 
+from franky import *
+
+# README: This code allows the user to first visualize the joint trajectory in 
+# simulation using RTB and swift then runs a Cartesian motion using the Franky library. 
+# Unfortunately, since Franky uses the underlying CartesianMotion of the libfranka library 
+# with propreiety trajectory generator and inverse kinematics, 
+# we can only make an "approximation" of how this joint trajectory is generated. 
+# This "approximation", studied experimentally by various authors, should be adequate
+# for the purposes of visualization safety for the csc376 course. 
+
 def main():
     np.set_printoptions(precision=4, suppress=True,)    
+
+    # I. Speed factor settings
+    relative_vel_factor = 0.02
+    relative_acc_factor = 0.01
+    relative_jerk_factor = 0.05
+
+    # II. RTB, Ruckig, Franky, and Visualizer setup
     panda_rtb_model = rtb.models.Panda()
-    motion_generator = RuckigMotionGenerator()
-    panda_rtb_model.q = panda_rtb_model.qr
-    visualizer = RtbVisualizer(panda_rtb_model, panda_rtb_model.qr)
+    motion_generator = RuckigMotionGenerator(relative_vel_factor, relative_acc_factor, relative_jerk_factor)
     
-    q_start = panda_rtb_model.q # TODO, get from Franky
+    franky_robot = Robot("192.168.1.107")  # Teachinglab IP
+    franky_robot.relative_dynamics_factor = RelativeDynamicsFactor(
+        velocity=relative_vel_factor, acceleration=relative_acc_factor, jerk=relative_jerk_factor)
+    
+    q_start = franky_robot.current_joint_state.position
+    visualizer = RtbVisualizer(panda_rtb_model, q_start)
+    
+    # III. Calculate your goal
     se3_start   = panda_rtb_model.fkine(q_start)
-    se3_target = SE3.Tx(0.10) * se3_start  # Forward 10 cm
+    se3_target = SE3.Tx(0.10) * se3_start # Relative to start position, pre-multiply for world frame reference
+    print("q_start", q_start)
+    print("se3_start", se3_start)
+    print("se3_target", se3_target)
     
-    # I. Visualize the trajectory in simulation
-    # The following 3-step process is what happens when we call franky_robot.move(cartesian_waypoint)
-    cartesian_traj, dt = motion_generator.calculate_cartesian_pose_trajectory(q_start, se3_start, se3_target) # Interpolation and trajectory parameterization
+    # IV. Visualize the trajectory in simulation
+    # The following 3-step process is what happens when we call franky_robot.move(cartesian_motion)
+    cartesian_traj, dt = motion_generator.calculate_cartesian_pose_trajectory(se3_start, se3_target) # Interpolation and trajectory parameterization
     q_traj = motion_generator.cartesian_pose_to_joint_trajectory(panda_rtb_model, q_start, cartesian_traj)
     input("Press enter, to run in visualizer\n")
     visualizer.run_joint_trajectory(q_traj, dt)
 
-    # Note, we will give you a helper function later for projects, 
-    # but for now it's better to learn and undertand what is going on
-    # -------------------------------------------------------------------------------
+    # TODO helper function for projects:
+    # calculate_joint_trajectory_and_visualize(panda_rtb_model, vizualizer, q_start, se3_target)
 
-    # II. Run on real robot
+    # V. Run on real robot
     yes_or_else = input("To run on the real robot, type [yes], then press enter\n")
     if yes_or_else != "yes":
         print("User did not type [yes], will not run on real robot")
         return visualizer
-
-    print("Ran on real robot")
-    # TODO, run with franky on real robot
+    motion = CartesianMotion(RobotPose(Affine(se3_target))) # World frame se3_target
+    franky_robot.move(motion)
 
     return visualizer
 

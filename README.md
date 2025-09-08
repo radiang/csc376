@@ -31,3 +31,12 @@ If outdated, the above was taken and modified from: https://github.com/TimSchnei
 
 # Run
 
+Prerequisites:
+1. Make sure you are running a linux real-time kernel: `uname -r` should show "rt" in the output
+2. Robot will move forward 10cm, please put in a possible position
+3. Put the Franka robot to FCI mode in Franka Desk
+
+```bash
+conda activate csc376
+python3 test_visualization_then_execute.py  
+```
