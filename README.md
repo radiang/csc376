@@ -40,3 +40,8 @@ Prerequisites:
 conda activate csc376
 python3 test_visualization_then_execute.py  
 ```
+
+# Install csc376_franky
+
+
+sudo apt -y install python3-pybind11

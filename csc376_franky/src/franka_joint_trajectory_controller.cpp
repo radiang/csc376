@@ -19,12 +19,9 @@ FrankaJointTrajectoryController::FrankaJointTrajectoryController(const std::stri
     
     for (int i = 0; i < 7; ++i)
     {
-
+        command_joint_positions_(i) = robot_state.q[i];
     }
     
-    command_joint_positions_ = robot_state.q;
-
-
     current_joint_positions_ = robot_state.q;
 
     k_gains_ = {{600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0}};
@@ -75,7 +72,7 @@ ErrorCodes FrankaJointTrajectoryController::runTrajectory(
         return ErrorCodes::JointSizeNotSeven;
     }
 
-    // Trajectory Validation
+    // Trajectory validation
     Eigen::MatrixXd joint_differences = computeRowDifferences(joint_trajectory);
     Eigen::Vector<double, 7> max_joint_differences = joint_differences.colwise().maxCoeff();
     for (int i = 0; i < 7; ++i)

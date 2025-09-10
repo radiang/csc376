@@ -2,3 +2,6 @@
 **.zip
 **/dist/
 *.vscode/
+*.egg-info
+**/build/
+**.so
