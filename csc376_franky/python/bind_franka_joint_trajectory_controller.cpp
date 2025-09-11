@@ -24,6 +24,8 @@ void bind_error_codes(py::module &m) {
         .value("JointSizeNotSeven", csc376_franky::ErrorCodes::JointSizeNotSeven)
         .value("JointDistancesAboveMaxJointDifference", csc376_franky::ErrorCodes::JointDistancesAboveMaxJointDifference)
         .value("JointVelocitiesAboveMaximumAllowed", csc376_franky::ErrorCodes::JointVelocitiesAboveMaximumAllowed)
+        .value("DtIsNegative", csc376_franky::ErrorCodes::DtIsNegative)
+        .value("DtIsSmallerThanAllowed", csc376_franky::ErrorCodes::DtIsSmallerThanAllowed)
         .export_values();
 }
 

@@ -19,6 +19,8 @@ enum class ErrorCodes
     JointSizeNotSeven = -1,
     JointDistancesAboveMaxJointDifference = -2,
     JointVelocitiesAboveMaximumAllowed = -3,
+    DtIsNegative = -4, 
+    DtIsSmallerThanAllowed = 5,
 };
 
 class FrankaJointTrajectoryController

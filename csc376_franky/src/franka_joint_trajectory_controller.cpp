@@ -78,16 +78,15 @@ Eigen::MatrixXd computeRowDifferences(const Eigen::MatrixXd& trajectory) {
 ErrorCodes FrankaJointTrajectoryController::runTrajectory(
     const Eigen::Ref<const Eigen::MatrixXd>& joint_trajectory, float dt)
 {
-    if (dt <= 0.0)
-    {
+    // Argument validation
+    if (dt <= 0.0) {
         std::cout << "dt must be larger than 0" << std::endl;
+        return ErrorCodes::DtIsNegative;
     }
-
-    if (dt < 0.01)
-    {
+    if (dt < 0.01) {
         std::cout << "dt of less than 0.01 not supported" << std::endl;
+        return ErrorCodes::DtIsSmallerThanAllowed;   
     }
-
     if (joint_trajectory.cols() != 7) {
         std::cout << "Trajectory must have 7 columns (joints)" << std::endl;
         return ErrorCodes::JointSizeNotSeven;
@@ -105,7 +104,6 @@ ErrorCodes FrankaJointTrajectoryController::runTrajectory(
             return ErrorCodes::JointDistancesAboveMaxJointDifference;
         }
     }
-
     Eigen::Vector<double, 7> max_joint_velocities = (joint_differences / dt).colwise().maxCoeff();
     for (int i = 0; i < 7; ++i)
     {
