@@ -9,14 +9,20 @@ sudo apt install gcc g++ unzip
 
 Installing python robotics toolbox:
 ```bash 
-conda create -n csc376 python==3.10
+conda create -n csc376 python==3.12
 conda activate csc376
 pip install roboticstoolbox-python ruckig
-pip install websockets==10.4 # Fix asyncio run error
-pip install numpy==1.25.0 # Fix numpy > 2 error
+pip install numpy==1.26.4 matplotlib==3.8.4 websockets==13.0.1
 ```
 
-Installing franky:
+Install our own version of swift:
+```bash
+git clone https://github.com/ContinuumRoboticsLab/swift-csc376
+cd swift-csc376
+pip install -e .
+```
+
+Installing franky (deprecated, not used):
 ```bash
 conda activate csc376
 pip uninstall franky-control # (added by us) remove previously installed

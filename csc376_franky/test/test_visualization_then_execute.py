@@ -190,7 +190,7 @@ def main():
     
     # III. Calculate your goal
     se3_start   = panda_rtb_model.fkine(q_start)
-    se3_target = SE3.Tx(0.10) * se3_start # Relative to start position, pre-multiply for world frame reference
+    se3_target = SE3.Ty(0.10) * se3_start # Relative to start position, pre-multiply for world frame reference
     print("q_start", q_start)
     print("se3_start", se3_start)
     print("se3_target", se3_target)
