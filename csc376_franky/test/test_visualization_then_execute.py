@@ -183,7 +183,8 @@ def main():
     motion_generator = RuckigMotionGenerator(relative_vel_factor, relative_acc_factor, relative_jerk_factor)
     
     csc376_franky_robot = csc376_franky.FrankaJointTrajectoryController("192.168.1.107")
-    
+    csc376_franky_robot.setupSignalHandler()
+
     q_start = csc376_franky_robot.get_current_joint_positions()
     visualizer = RtbVisualizer(panda_rtb_model, q_start)
     

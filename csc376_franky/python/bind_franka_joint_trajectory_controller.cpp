@@ -119,11 +119,12 @@ void bind_franka_trajectory_controller(py::module &m) {
         .def(py::init<const std::string&>(), 
              py::arg("fci_host_ip"),
              "Constructor - connects to robot at specified IP address")
-        
+        .def_static("setupSignalHandler", &csc376_franky::FrankaJointTrajectoryController::setupSignalHandler)
         // Control methods
         .def("join", &csc376_franky::FrankaJointTrajectoryController::join,
              "Wait for the control thread to finish")
-        
+        .def("stop", &csc376_franky::FrankaJointTrajectoryController::stop,
+             "Stop all robot functions, including the currently running trajectory")
         .def("run_trajectory", &csc376_franky::FrankaJointTrajectoryController::runTrajectory,
              py::arg("joint_trajectory"), py::arg("dt"),
              "Execute joint trajectory (N×7 matrix, dt in seconds). Returns ErrorCode.")

@@ -11,6 +11,8 @@
 namespace csc376_franky
 {
 
+std::atomic<bool> FrankaJointTrajectoryController::stop_command_{false};
+
 FrankaJointTrajectoryController::FrankaJointTrajectoryController(const std::string& fci_host_ip)
 {
     robot_ = std::make_unique<franka::Robot>(fci_host_ip);
@@ -51,8 +53,7 @@ FrankaJointTrajectoryController::FrankaJointTrajectoryController(const std::stri
 
 FrankaJointTrajectoryController::~FrankaJointTrajectoryController()
 {
-    robot_->stop();
-    this->join();
+    this->stop();
 }
 
 void FrankaJointTrajectoryController::join()
@@ -60,10 +61,27 @@ void FrankaJointTrajectoryController::join()
     control_thread_.join();
 }
 
-// void FrankaJointTrajectoryController::stop()
-// {
-//     stop_command_ = true;
-// }
+void FrankaJointTrajectoryController::setupSignalHandler() {
+    std::signal(SIGINT, handleSignal);
+}
+
+void FrankaJointTrajectoryController::handleSignal(int signal) {
+    if (signal == SIGINT) {
+        stop_command_.store(true);
+        // std::cout << "\n[InterruptHandler] SIGINT received. Flag set to true.\n";
+        // Re-install default handler so Python can raise KeyboardInterrupt
+        std::signal(SIGINT, SIG_DFL);
+        // Re-raise signal to allow Python to handle it and terminate if needed
+        std::raise(SIGINT);
+    }
+}
+
+void FrankaJointTrajectoryController::stop()
+{
+    stop_command_ = true;
+    robot_->stop();
+    control_thread_.join();
+}
 
 Eigen::MatrixXd computeRowDifferences(const Eigen::MatrixXd& trajectory) {
     if (trajectory.rows() < 2) {
@@ -121,6 +139,10 @@ ErrorCodes FrankaJointTrajectoryController::runTrajectory(
     {
         setCommandJointPositions(joint_trajectory.row(i));
         std::this_thread::sleep_for(std::chrono::duration<float>(dt));
+        if(stop_command_.load())
+        {
+            return ErrorCodes::Interrupted;
+        }
     }
     return ErrorCodes::Success;
 }
