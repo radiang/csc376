@@ -24,7 +24,7 @@ FrankaJointTrajectoryController::FrankaJointTrajectoryController(const std::stri
     
     current_joint_positions_ = robot_state.q;
 
-    k_gains_ = {{600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0}};
+    k_gains_ = {{800.0, 1100.0, 1200.0, 1000.0, 550.0, 200.0, 150.0}};
     d_gains_ = {{50.0, 50.0, 50.0, 50.0, 30.0, 25.0, 15.0}};
     robot_->setCollisionBehavior(
         {{20.0, 20.0, 18.0, 18.0, 16.0, 14.0, 12.0}},
@@ -49,10 +49,21 @@ FrankaJointTrajectoryController::FrankaJointTrajectoryController(const std::stri
     control_thread_ = std::thread(robot_control_func);
 }
 
+FrankaJointTrajectoryController::~FrankaJointTrajectoryController()
+{
+    robot_->stop();
+    this->join();
+}
+
 void FrankaJointTrajectoryController::join()
 {
     control_thread_.join();
 }
+
+// void FrankaJointTrajectoryController::stop()
+// {
+//     stop_command_ = true;
+// }
 
 Eigen::MatrixXd computeRowDifferences(const Eigen::MatrixXd& trajectory) {
     if (trajectory.rows() < 2) {
@@ -67,6 +78,16 @@ Eigen::MatrixXd computeRowDifferences(const Eigen::MatrixXd& trajectory) {
 ErrorCodes FrankaJointTrajectoryController::runTrajectory(
     const Eigen::Ref<const Eigen::MatrixXd>& joint_trajectory, float dt)
 {
+    if (dt <= 0.0)
+    {
+        std::cout << "dt must be larger than 0" << std::endl;
+    }
+
+    if (dt < 0.01)
+    {
+        std::cout << "dt of less than 0.01 not supported" << std::endl;
+    }
+
     if (joint_trajectory.cols() != 7) {
         std::cout << "Trajectory must have 7 columns (joints)" << std::endl;
         return ErrorCodes::JointSizeNotSeven;
@@ -88,11 +109,11 @@ ErrorCodes FrankaJointTrajectoryController::runTrajectory(
     Eigen::Vector<double, 7> max_joint_velocities = (joint_differences / dt).colwise().maxCoeff();
     for (int i = 0; i < 7; ++i)
     {
-        if (max_joint_velocities(i) > MAX_JOINT_VELOCITIES_[i])
+        if (max_joint_velocities(i) > MAX_JOINT_VELOCITIES_[i] * 0.3)
         {
             std::cout << "Maximum joint velocity exceeded for joint: " << i << std::endl;
             std::cout << "User desired velocity: " << max_joint_velocities(i) << std::endl;
-            std::cout << "Maximum joint velocity: " << MAX_JOINT_VELOCITIES_[i] << std::endl;
+            std::cout << "Maximum joint velocity: " << MAX_JOINT_VELOCITIES_[i] * 0.3 << std::endl;
             return ErrorCodes::JointVelocitiesAboveMaximumAllowed;
         }
     }
@@ -145,13 +166,13 @@ franka::Torques FrankaJointTrajectoryController::impedanceControlCallback(
         for (size_t i = 0; i < 7; i++)
         {
             // Checked twice doeesn't hurt
-            if (abs(command_joint_positions_(i) - state.q[i]) > MAX_JOINT_DIFFERENCE_) 
+            if (abs(command_joint_positions_(i) - state.q[i]) > MAX_JOINT_DIFFERENCE_IMPEDENCE) 
             {
                 throw std::runtime_error(
                     "Desired joint [" + std::to_string(i) + 
                     "] position [" + std::to_string(command_joint_positions_(i)) + 
                     " - actual position [" + std::to_string(state.q[i]) + "] is larger than tolerance: " +
-                    std::to_string(MAX_JOINT_DIFFERENCE_));
+                    std::to_string(MAX_JOINT_DIFFERENCE_IMPEDENCE));
             }
         }
         // ----------------------------------------------- //
@@ -167,6 +188,7 @@ franka::Torques FrankaJointTrajectoryController::impedanceControlCallback(
     // Limit rate torque
     std::array<double, 7> tau_d_rate_limited = franka::limitRate(
         franka::kMaxTorqueRate, tau_d_calculated, state.tau_J_d);
+
     return tau_d_rate_limited;
 }
 

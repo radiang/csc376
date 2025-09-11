@@ -23,23 +23,25 @@ for i in range(num_waypoints):
     alpha = i / (num_waypoints - 1)
     trajectory[i] = start_pos + alpha * (end_pos - start_pos)
 
+controller.join()
+
 # Execute trajectory
-dt = 0.02  # 50Hz
-result = controller.run_trajectory(trajectory, dt)
+# dt = 0.02  # 50Hz
+# result = controller.run_trajectory(trajectory, dt)
 
-if result == csc376_franky.ErrorCodes.Success:
-    print("Trajectory executed successfully!")
-elif result == csc376_franky.ErrorCodes.JointVelocitiesAboveMaximumAllowed:
-    print("Trajectory too fast - reduce speed or increase waypoints")
-else:
-    print(f"Trajectory failed with error: {result}")
+# if result == csc376_franky.ErrorCodes.Success:
+#     print("Trajectory executed successfully!")
+# elif result == csc376_franky.ErrorCodes.JointVelocitiesAboveMaximumAllowed:
+#     print("Trajectory too fast - reduce speed or increase waypoints")
+# else:
+#     print(f"Trajectory failed with error: {result}")
 
-# Check for collisions during execution
-final_state = controller.get_current_robot_state()
-if any(final_state.joint_collision) or any(final_state.cartesian_collision):
-    print("Collision detected!")
+# # Check for collisions during execution
+# final_state = controller.get_current_robot_state()
+# if any(final_state.joint_collision) or any(final_state.cartesian_collision):
+#     print("Collision detected!")
 
-# Compute trajectory properties
-differences = csc376_franky.compute_row_differences(trajectory)
-max_velocity = np.max(np.abs(differences / dt))
-print(f"Maximum trajectory velocity: {max_velocity} rad/s")
+# # Compute trajectory properties
+# differences = csc376_franky.compute_row_differences(trajectory)
+# max_velocity = np.max(np.abs(differences / dt))
+# print(f"Maximum trajectory velocity: {max_velocity} rad/s")

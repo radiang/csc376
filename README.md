@@ -43,5 +43,24 @@ python3 test_visualization_then_execute.py
 
 # Install csc376_franky
 
-
+```bash
 sudo apt -y install python3-pybind11
+pip install pybind11
+conda activate csc376
+cd csc376_franky
+pip install .
+```
+
+# Realtime Kernel
+
+sudo nano /etc/security/limits.conf
+
+@realtime soft rtprio 99
+@realtime soft priority 99
+@realtime soft memlock 102400
+@realtime hard rtprio 99
+@realtime hard priority 99
+@realtime hard memlock 102400
+
+sudo groupadd -r realtime
+sudo usermod -aG realtime $USER

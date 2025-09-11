@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -24,10 +25,13 @@ class FrankaJointTrajectoryController
 {
 public:
     FrankaJointTrajectoryController(const std::string& fci_host_ip);
+    ~FrankaJointTrajectoryController();
+
     ErrorCodes runTrajectory(const Eigen::Ref<const Eigen::MatrixXd>& joint_trajectory, float dt);
     franka::RobotState getCurrentRobotState();
     std::array<double, 7> getCurrentJointPositions();
     void join();
+    // void stop();
 private:
     std::unique_ptr<franka::Model> model_;
     std::unique_ptr<franka::Robot> robot_;
@@ -46,8 +50,11 @@ private:
     std::mutex command_state_mtx_;
     Eigen::Vector<double, 7> command_joint_positions_;
 
-    static constexpr double MAX_JOINT_DIFFERENCE_ = 0.05;
-    const std::array<double, 7> MAX_JOINT_VELOCITIES_ = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1}; // rad/s 
+    // std::atomic<bool> stop_command_{false};
+
+    static constexpr double MAX_JOINT_DIFFERENCE_ = 0.0174; // rad ~ 1 deg 
+    static constexpr double MAX_JOINT_DIFFERENCE_IMPEDENCE = 0.025;
+    const std::array<double, 7> MAX_JOINT_VELOCITIES_ = {3.0, 3.0, 3.0, 2.5, 2.5, 2.5, 2.62}; // rad/s 
 
 };
 
