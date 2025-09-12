@@ -4,19 +4,29 @@
 #include <pybind11/chrono.h>
 #include <pybind11/numpy.h>
 #include <franka/robot_state.h>
+#include <franka/gripper_state.h>
 #include "csc376_franky/franka_joint_trajectory_controller.hpp"
+#include "csc376_franky/gripper.hpp"
+#include "macros.hpp"
 
 namespace py = pybind11;
+using namespace pybind11::literals;  // to bring in the '_a' literal
+
+#define ADD_FIELD_RO(obj_type, unused, name) .def_readonly(#name, &obj_type::name)
+#define ADD_FIELDS_RO(obj, obj_type, ...) obj MAP_C1(ADD_FIELD_RO, obj_type, __VA_ARGS__);
+
 
 // Define RobotState fields to expose (following your macro pattern)
-#define ROBOT_STATE_FIELDS \
-    q, dq, ddq_d, tau_J, dtau_J, tau_J_d, tau_ext_hat_filtered, \
-    O_T_EE, O_T_EE_d, F_T_EE, EE_T_K, m_ee, I_ee, F_x_Cee, \
-    elbow, elbow_d, elbow_c, delbow_c, ddelbow_c, \
-    joint_contact, cartesian_contact, joint_collision, cartesian_collision, \
-    K_F_ext_hat_K, O_F_ext_hat_K, theta, dtheta, \
-    current_errors, last_motion_errors, control_command_success_rate, \
-    robot_mode, time
+// #define ROBOT_STATE_FIELDS \
+//     q, dq, ddq_d, tau_J, dtau_J, tau_J_d, tau_ext_hat_filtered, \
+//     O_T_EE, O_T_EE_d, F_T_EE, EE_T_K, m_ee, I_ee, F_x_Cee, \
+//     elbow, elbow_d, elbow_c, delbow_c, ddelbow_c, \
+//     joint_contact, cartesian_contact, joint_collision, cartesian_collision, \
+//     K_F_ext_hat_K, O_F_ext_hat_K, theta, dtheta, \
+//     current_errors, last_motion_errors, control_command_success_rate, \
+//     robot_mode, time
+
+#define GRIPPER_STATE_FIELDS width, max_width, is_grasped, temperature, time
 
 void bind_error_codes(py::module &m) {
     py::enum_<csc376_franky::ErrorCodes>(m, "ErrorCodes")
@@ -114,6 +124,20 @@ void bind_robot_state(py::module &m) {
                      "Timestamp");
 }
 
+void bind_gripper_state(py::module &m){
+    py::class_<franka::GripperState> gripper_state(m, "GripperState");
+    ADD_FIELDS_RO(gripper_state, franka::GripperState, GRIPPER_STATE_FIELDS)
+    gripper_state.def(
+        py::pickle(
+            [](const franka::GripperState &state) {  // __getstate__
+                return PACK_TUPLE(state, GRIPPER_STATE_FIELDS);
+            },
+            [](const py::tuple &t) {  // __setstate__
+                if (t.size() != COUNT(GRIPPER_STATE_FIELDS)) throw std::runtime_error("Invalid state!");
+                return UNPACK_TUPLE(franka::GripperState, t, GRIPPER_STATE_FIELDS);
+            }));
+}
+
 void bind_franka_trajectory_controller(py::module &m) {
     py::class_<csc376_franky::FrankaJointTrajectoryController>(m, "FrankaJointTrajectoryController")
         .def(py::init<const std::string&>(), 
@@ -141,10 +165,49 @@ void bind_franka_trajectory_controller(py::module &m) {
              "Get the current complete robot state");
 }
 
+void bind_gripper(py::module &m)
+{
+    py::class_<franky::Gripper>(m, "Gripper")
+    .def(py::init<const std::string &>(), "fci_hostname"_a)
+    .def(
+        "grasp",
+        &franky::Gripper::grasp,
+        "width"_a,
+        "speed"_a,
+        "force"_a,
+        "epsilon_inner"_a = 0.005,
+        "epsilon_outer"_a = 0.005,
+        py::call_guard<py::gil_scoped_release>())
+    .def(
+        "grasp_async",
+        &franky::Gripper::graspAsync,
+        "width"_a,
+        "speed"_a,
+        "force"_a,
+        "epsilon_inner"_a = 0.005,
+        "epsilon_outer"_a = 0.005,
+        py::call_guard<py::gil_scoped_release>())
+    .def("move", &franky::Gripper::move, "width"_a, "speed"_a, py::call_guard<py::gil_scoped_release>())
+    .def("move_async", &franky::Gripper::moveAsync, "width"_a, "speed"_a, py::call_guard<py::gil_scoped_release>())
+    .def("open", &franky::Gripper::open, "speed"_a, py::call_guard<py::gil_scoped_release>())
+    .def("open_async", &franky::Gripper::openAsync, "speed"_a, py::call_guard<py::gil_scoped_release>())
+    .def("homing", &franky::Gripper::homing, py::call_guard<py::gil_scoped_release>())
+    .def("homing_async", &franky::Gripper::homingAsync, py::call_guard<py::gil_scoped_release>())
+    .def("stop", &franky::Gripper::stop, py::call_guard<py::gil_scoped_release>())
+    .def("stop_async", &franky::Gripper::stopAsync, py::call_guard<py::gil_scoped_release>())
+    .def_property_readonly("state", &franky::Gripper::state, py::call_guard<py::gil_scoped_release>())
+    .def_property_readonly("server_version", reinterpret_cast<uint16_t (franky::Gripper::*)()>(&franky::Gripper::serverVersion))
+    .def_property_readonly("width", &franky::Gripper::width, py::call_guard<py::gil_scoped_release>())
+    .def_property_readonly("is_grasped", &franky::Gripper::is_grasped, py::call_guard<py::gil_scoped_release>())
+    .def_property_readonly("max_width", &franky::Gripper::max_width, py::call_guard<py::gil_scoped_release>());
+}
+
 PYBIND11_MODULE(csc376_franky, m) 
 {
     m.doc() = "Python bindings for CSC376 Franka Joint Trajectory Controller";
     bind_error_codes(m);    
     bind_robot_state(m);
     bind_franka_trajectory_controller(m);
+    bind_gripper_state(m);
+    bind_gripper(m);
 }

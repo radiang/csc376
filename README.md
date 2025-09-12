@@ -55,7 +55,7 @@ Prerequisites:
 ```bash
 conda activate csc376
 cd csc376_franky
-python3 test/visualize_then_execute.py  
+python3 test/visualize_then_execute_trajectory.py  
 ```
 
 # Realtime Kernel Settings

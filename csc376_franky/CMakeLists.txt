@@ -26,6 +26,7 @@ include_directories(
 # Create the main library (your C++ trajectory controller)
 add_library(csc376_franky_lib SHARED
     src/franka_joint_trajectory_controller.cpp
+    src/gripper.cpp
 )
 
 target_link_libraries(csc376_franky_lib
@@ -41,7 +42,7 @@ target_include_directories(csc376_franky_lib PUBLIC
 
 # Create the Python module
 pybind11_add_module(csc376_franky_py 
-    python/bind_franka_joint_trajectory_controller.cpp
+    python/bind_franky.cpp
 )
 
 # Link the Python module to your C++ library

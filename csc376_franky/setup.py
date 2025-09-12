@@ -6,8 +6,9 @@ ext_modules = [
     Extension(
         'csc376_franky',
         [
-            'python/bind_franka_joint_trajectory_controller.cpp',
+            'python/bind_franky.cpp',
             'src/franka_joint_trajectory_controller.cpp',
+            'src/gripper.cpp',
         ],
         include_dirs=[
             'include/',
