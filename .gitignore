@@ -5,3 +5,6 @@
 *.egg-info
 **/build/
 **.so
+
+**/libfranka/
+**/swift-csc376

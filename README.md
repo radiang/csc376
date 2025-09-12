@@ -4,7 +4,7 @@
 
 Might need linux dependencies, if a fresh install:
 ```bash
-sudo apt install gcc g++ unzip 
+sudo apt -y install gcc g++ unzip python3-pybind11
 ```
 
 Installing python robotics toolbox:
@@ -22,18 +22,28 @@ cd swift-csc376
 pip install -e .
 ```
 
-Installing franky (deprecated, not used):
+Install libfranka 0.9.2 (teaching lab), 
+Taken from, https://github.com/frankarobotics/libfranka, partially modified because 0.9.2 build instructions was from libfranka website that is down:
+
 ```bash
-conda activate csc376
-pip uninstall franky-control # (added by us) remove previously installed
-VERSION=0-9-2 # (added by us) Teachinglab frankas use 0.9.2
-wget https://github.com/TimSchneider42/franky/releases/latest/download/libfranka_${VERSION}_wheels.zip
-unzip libfranka_${VERSION}_wheels.zip
-# pip install numpy # (added by us) Should already be done from above
-pip install --no-index --find-links=./dist franky-control
+sudo apt-get update && sudo apt-get install -y build-essential cmake git libpoco-dev libeigen3-dev libfmt-dev
+
+git clone --recurse-submodules https://github.com/frankarobotics/libfranka.git
+cd libfranka
+git checkout 0.9.2 && git submodule update
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF .. && make
+cpack -G DEB &&  sudo dpkg -i libfranka*.deb
+cd ../.. # Get out of libfranka lib
 ```
 
-If outdated, the above was taken and modified from: https://github.com/TimSchneider42/franky?tab=readme-ov-file#installing-franky. 
+Install csc376 franky:
+```bash
+conda activate csc376
+pip install pybind11
+cd csc376_franky
+pip install .
+```
 
 # Run
 
@@ -44,23 +54,19 @@ Prerequisites:
 
 ```bash
 conda activate csc376
-python3 test_visualization_then_execute.py  
+cd csc376_franky
+python3 test/visualize_then_execute.py  
 ```
 
-# Install csc376_franky
+# Realtime Kernel Settings
+because libfranka website is down
 
 ```bash
-sudo apt -y install python3-pybind11
-pip install pybind11
-conda activate csc376
-cd csc376_franky
-pip install .
-```
-
-# Realtime Kernel
-
 sudo nano /etc/security/limits.conf
 
+```
+
+Add these:
 @realtime soft rtprio 99
 @realtime soft priority 99
 @realtime soft memlock 102400
@@ -68,5 +74,9 @@ sudo nano /etc/security/limits.conf
 @realtime hard priority 99
 @realtime hard memlock 102400
 
+```bash
 sudo groupadd -r realtime
 sudo usermod -aG realtime $USER
+```
+
+Logout and login again

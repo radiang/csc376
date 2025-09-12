@@ -17,13 +17,13 @@ FrankaJointTrajectoryController::FrankaJointTrajectoryController(const std::stri
 {
     robot_ = std::make_unique<franka::Robot>(fci_host_ip);
 
+    // Locking is better but should be fine
     auto robot_state = robot_->readOnce();
-    
+    current_robot_state_ = robot_state;
     for (int i = 0; i < 7; ++i)
     {
         command_joint_positions_(i) = robot_state.q[i];
     }
-    
     current_joint_positions_ = robot_state.q;
 
     k_gains_ = {{800.0, 1100.0, 1200.0, 1000.0, 550.0, 200.0, 150.0}};
