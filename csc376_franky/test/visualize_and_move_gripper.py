@@ -1,8 +1,7 @@
 
 import roboticstoolbox as rtb
-from simulation import RtbVisualizer
+from csc376_franky.vizualizer import RtbVisualizer
 import csc376_franky
-
 
 def main():
     panda_rtb_model = rtb.models.Panda()

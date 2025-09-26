@@ -1,12 +1,21 @@
-import numpy as np
 import roboticstoolbox as rtb
-from csc376_franky.vizualizer import RtbVisualizer
 from csc376_franky.motion_generator import RuckigMotionGenerator
-
-import csc376_franky
+import numpy as np
 
 def main():
     np.set_printoptions(precision=4, suppress=True,)    
+
+    simulation = False # I actually don't like using a sim bool, makes code complex
+    # Prefer to just rewrite in individual scripts
+
+    if simulation:
+        from csc376_franky.test.vizualizer import RtbVisualizer
+        visualizer = RtbVisualizer(panda_rtb_model, q_start)
+    else:
+        import csc376_franky
+        csc376_franky_robot = csc376_franky.FrankaJointTrajectoryController("192.168.1.107")
+        csc376_franky_robot.setupSignalHandler()
+        q_start = csc376_franky_robot.get_current_joint_positions()
 
     # I. Speed factor settings
     relative_vel_factor = 0.02
@@ -16,12 +25,6 @@ def main():
     # II. RTB, Ruckig, csc376_franky, and Visualizer setup
     panda_rtb_model = rtb.models.Panda()
     motion_generator = RuckigMotionGenerator(relative_vel_factor, relative_acc_factor, relative_jerk_factor)
-    
-    csc376_franky_robot = csc376_franky.FrankaJointTrajectoryController("192.168.1.107")
-    csc376_franky_robot.setupSignalHandler()
-
-    q_start = csc376_franky_robot.get_current_joint_positions()
-    visualizer = RtbVisualizer(panda_rtb_model, q_start)
     
     # III. Calculate your goal
     se3_start   = panda_rtb_model.fkine(q_start)

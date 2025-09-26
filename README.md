@@ -22,7 +22,7 @@ cd swift-csc376
 pip install -e .
 ```
 
-Install libfranka 0.9.2 (teaching lab), 
+If libfranka not installed before, install libfranka 0.9.2 (teaching lab), 
 Taken from, https://github.com/frankarobotics/libfranka, partially modified because 0.9.2 build instructions was from libfranka website that is down:
 
 ```bash
