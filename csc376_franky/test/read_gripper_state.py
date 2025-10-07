@@ -1,6 +1,6 @@
-import csc376_franky
+import csc376_bind_franky
 
-csc376_gripper = csc376_franky.Gripper("192.168.1.107")
+csc376_gripper = csc376_bind_franky.Gripper("192.168.1.107")
 gripper_state = csc376_gripper.state
 
 print(f"Current width: {gripper_state.width}")

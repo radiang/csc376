@@ -149,7 +149,7 @@ void bind_franka_trajectory_controller(py::module &m) {
              "Wait for the control thread to finish")
         .def("stop", &csc376_franky::FrankaJointTrajectoryController::stop,
              "Stop all robot functions, including the currently running trajectory")
-        .def("run_trajectory", &csc376_franky::FrankaJointTrajectoryController::runTrajectory,
+        .def("run_joint_trajectory", &csc376_franky::FrankaJointTrajectoryController::runJointTrajectory,
              py::arg("joint_trajectory"), py::arg("dt"),
              "Execute joint trajectory (N×7 matrix, dt in seconds). Returns ErrorCode.")
         
@@ -202,7 +202,7 @@ void bind_gripper(py::module &m)
     .def_property_readonly("max_width", &franky::Gripper::max_width, py::call_guard<py::gil_scoped_release>());
 }
 
-PYBIND11_MODULE(csc376_franky, m) 
+PYBIND11_MODULE(csc376_bind_franky, m) 
 {
     m.doc() = "Python bindings for CSC376 Franka Joint Trajectory Controller";
     bind_error_codes(m);    

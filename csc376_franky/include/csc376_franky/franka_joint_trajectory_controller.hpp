@@ -31,7 +31,7 @@ public:
     FrankaJointTrajectoryController(const std::string& fci_host_ip);
     ~FrankaJointTrajectoryController();
 
-    ErrorCodes runTrajectory(const Eigen::Ref<const Eigen::MatrixXd>& joint_trajectory, float dt);
+    ErrorCodes runJointTrajectory(const Eigen::Ref<const Eigen::MatrixXd>& joint_trajectory, float dt);
     franka::RobotState getCurrentRobotState();
     std::array<double, 7> getCurrentJointPositions();
     static void setupSignalHandler();

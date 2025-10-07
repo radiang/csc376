@@ -1,8 +1,8 @@
 import numpy as np
-import csc376_franky
+import csc376_bind_franky
 
 # Create controller
-controller = csc376_franky.FrankaJointTrajectoryController("192.168.1.107")
+controller = csc376_bind_franky.FrankaJointTrajectoryController("192.168.1.107")
 
 # Get current state
 current_pos = controller.get_current_joint_positions()

@@ -93,7 +93,7 @@ Eigen::MatrixXd computeRowDifferences(const Eigen::MatrixXd& trajectory) {
     return row_differences;
 }
 
-ErrorCodes FrankaJointTrajectoryController::runTrajectory(
+ErrorCodes FrankaJointTrajectoryController::runJointTrajectory(
     const Eigen::Ref<const Eigen::MatrixXd>& joint_trajectory, float dt)
 {
     // Argument validation

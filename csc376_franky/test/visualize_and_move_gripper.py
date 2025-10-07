@@ -1,12 +1,12 @@
 
 import roboticstoolbox as rtb
 from csc376_franky.vizualizer import RtbVisualizer
-import csc376_franky
+import csc376_bind_franky
 
 def main():
     panda_rtb_model = rtb.models.Panda()
     
-    csc376_gripper = csc376_franky.Gripper("192.168.1.107")
+    csc376_gripper = csc376_bind_franky.Gripper("192.168.1.107")
     q_start =  panda_rtb_model.qr # Random q start for visualizer
     visualizer = RtbVisualizer(panda_rtb_model, q_start)
 

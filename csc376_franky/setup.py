@@ -1,10 +1,10 @@
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 import pybind11
 import numpy
 
 ext_modules = [
     Extension(
-        'csc376_franky',
+        'csc376_bind_franky',
         [
             'python/bind_franky.cpp',
             'src/franka_joint_trajectory_controller.cpp',
@@ -27,5 +27,7 @@ ext_modules = [
 setup(
     name='csc376_franky',
     ext_modules=ext_modules,
+    packages=find_packages(include=['csc376_franky']),
     zip_safe=False,
 )
+
