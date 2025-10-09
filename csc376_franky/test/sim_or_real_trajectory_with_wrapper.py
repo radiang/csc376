@@ -2,23 +2,19 @@ import roboticstoolbox as rtb
 from spatialmath import SE3
 
 from csc376_franky.motion_generator import RuckigMotionGenerator
+from csc376_franky.robot_wrapper import RobotWrapper
 import numpy as np
 
 def main():
     np.set_printoptions(precision=4, suppress=True,)    
 
-    simulation = True # Radian: I don't like using sim bool
     panda_rtb_model = rtb.models.Panda()
 
-    if simulation:
-        from csc376_franky.vizualizer import RtbVisualizer
-        q_start = panda_rtb_model.qr
-        robot = RtbVisualizer(panda_rtb_model, q_start)
-    else:
-        import csc376_bind_franky
-        robot = csc376_bind_franky.FrankaJointTrajectoryController("192.168.1.107")
-        robot.setupSignalHandler()
-        q_start = robot.get_current_joint_positions()
+    has_visualizer = False
+    run_on_real = True
+    q_start = panda_rtb_model.qr
+    robot = RobotWrapper(has_visualizer, run_on_real, panda_rtb_model, q_start, "192.168.1.107")
+    q_start = robot.get_current_joint_positions() # if it is real, will get real robot position
 
     relative_vel_factor = 0.02
     relative_acc_factor = 0.01
@@ -57,14 +53,9 @@ def main():
         se3_current = se3_target
         q_current = q_traj[-1]
 
-    # V. Run on robot (sim or real)
+    # V. Run on robot (sim, real, or both)
     for q_traj in q_trajs:
-        yes_or_else = input("To run on the sim/real robot, type [yes], then press enter\n")
-        if yes_or_else != "yes":
-            print("User did not type [yes], will not run on sim/real robot")
-            return robot
         robot.run_joint_trajectory(q_traj, dt)
-    
     return robot
 
 if __name__ == "__main__":
