@@ -1,5 +1,7 @@
 import numpy as np
 
+# Radian: I'm not gonna document a convenience wrapper, 
+# you should know what this does by just reading the code. 
 class RobotWrapper:
     def __init__(self, has_visualizer: bool, run_on_real: bool,
                  panda_rtb_model, q_start: np.ndarray, ip_address: str):

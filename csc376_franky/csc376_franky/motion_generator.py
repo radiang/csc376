@@ -1,6 +1,7 @@
 import copy
 import numpy as np
 import time
+from typing import List, Tuple
 
 import roboticstoolbox as rtb
 from ruckig import InputParameter, OutputParameter, Result, Ruckig
@@ -10,6 +11,7 @@ from spatialmath import SE3
 # Ruckig Motion Generator code taken mostly from: https://github.com/Patrick15Yao/franky_toolbox_bridge/blob/main/franky_toolbox_bridge/rtb_backend.py, 
 # and tailored in a more calculate traj -> then visualize way, 
 # also made more functional programming style. 
+# Please credit Patrick Yao, github id Patrick15Yao for this work.
 
 def normalize_rx_angle(rv_vector):
     """
@@ -68,26 +70,50 @@ def rotation_vector_to_joint_config(model, q_current, RV_new):
     
     return q_new
     
-# Ruckig is used because the internal franky uses ruckig to generate trajectories, and we
-# want to visualize the franka robot's trajectory in swift before running on the real robot. 
-# HOWEVER, the rucking parameters might not be the same so trajectories might slightly be different in
-# sim and in real
 class RuckigMotionGenerator:
-    def __init__(self, relative_vel_factor = 0.02, relative_acc_factor = 0.01, relative_jerk_factor = 0.05):
-
+    def __init__(self):
         self.dt = 0.05
         self.ruckig = Ruckig(dofs=7, delta_time=self.dt)
         self.PANDA_VEL_LIM_CARTESIAN = np.array([3.0, 3.0, 3.0, 2.5, 2.5, 2.5, 2.62])   # m/s
         self.PANDA_ACC_LIM_CARTESIAN =  np.array([9.0, 9.0, 9.0, 17.0, 17.0, 17.0, 10.0]) # m/s²
         self.PANDA_JERK_LIM_CARTESIAN = np.array([4500.0, 4500.0, 4500.0, 8500.0, 8500.0, 8500.0, 5000.0]) # m/s³
-        self.relative_vel_factor = relative_vel_factor
-        self.relative_acc_factor = relative_acc_factor
-        self.relative_jerk_factor = relative_jerk_factor
 
     def calculate_cartesian_pose_trajectory(self,
-                       se3_start: SE3,
+                       se3_start : SE3,
                        se3_target: SE3, 
-                       rv = 0.02, ra=0.01, rj=0.05):
+                       relative_vel_factor : float=0.02,
+                       relative_acc_factor : float=0.01,
+                       relative_jerk_factor: float=0.05) -> Tuple[List[List], float]: 
+        """ Interpolates and creates a smooth cartesian trajectory (smooth vel, acc, jerk maybe) 
+        starting from se3_start and ending at se3_target. The trajectory also follows
+        the given cartesian constraints: relative_vel_factor, relative_acc_factor, and relative_jerk_factor
+        which implicitly converts to a joint constraint :). 
+
+        Parameters
+        ----------
+        se3_start:  SE3 
+            The start end-effector pose of the trajectory. Usually the current ee pose of the robot.
+        se3_target: SE3
+            The end end-effector pose of the trajectory.
+        relative_vel_factor : float
+            0-1 multiplication factor to multiply PANDA_VEL_LIM_CARTESIAN.
+            Limits the cartesian velocity during the entire trajectory.
+        relative_acc_factor : float
+            0-1 multiplication factor to multiply PANDA_ACC_LIM_CARTESIAN.
+            Limits the cartesian acceleration during the entire trajectory.
+        relative_jerk_factor: float
+            0-1 multiplication factor to multiply PANDA_JERK_LIM_CARTESIAN.
+            Limits the cartesian jerk during the entire trajectory.
+        
+        Returns
+        ----------     
+        cartesian_pose_traj: List[List] 
+            List of a List: [[x, y, z, rx, ry, rz, elbow_angle], ... ]. 
+            Cartesian pose trajectory of the end effector. 
+        self.dt: float 
+            Delta time between trajectory points of the cartsian_pose_traj.
+        """
+        
         RV_start    = se3_to_rotation_vector(se3_start)
         RV_target   = se3_to_rotation_vector(se3_target)
 
@@ -102,9 +128,9 @@ class RuckigMotionGenerator:
         inp.target_position     = N_RV_target
         inp.target_velocity     = [0, 0, 0, 0, 0, 0, 0]
         inp.target_acceleration = [0, 0, 0, 0, 0, 0, 0]
-        inp.max_velocity     = self.PANDA_VEL_LIM_CARTESIAN * self.relative_vel_factor
-        inp.max_acceleration = self.PANDA_ACC_LIM_CARTESIAN * self.relative_acc_factor
-        inp.max_jerk         = self.PANDA_JERK_LIM_CARTESIAN * self.relative_jerk_factor
+        inp.max_velocity     = self.PANDA_VEL_LIM_CARTESIAN * relative_vel_factor
+        inp.max_acceleration = self.PANDA_ACC_LIM_CARTESIAN * relative_acc_factor
+        inp.max_jerk         = self.PANDA_JERK_LIM_CARTESIAN * relative_jerk_factor
         inp.enabled = [True, True, True, True, True, True, True]
         res = Result.Working
     
@@ -115,7 +141,27 @@ class RuckigMotionGenerator:
             out.pass_to_input(inp)
         return cartesian_pose_traj, self.dt
 
-    def cartesian_pose_to_joint_trajectory(self, model, q_start, cartesian_pose_traj):
+    def cartesian_pose_to_joint_trajectory(self, model, q_start: np.ndarray, cartesian_pose_traj: List[List]) -> List[np.ndarray]:
+        """ Converts the cartesian pose trajectory to a joint trajectory using inverse kinematics
+        from the model.
+                
+        Parameters
+        ----------
+        model: robotics toolbox model type 
+            Robot model for computing IK.
+        q_start : np.ndarray
+            The robot's current joint positions to determine redundant solutions in the IK.
+            The size is joint_dof of robot.
+        cartesian_pose_traj:  List[List] 
+            List of a List: [[x, y, z, rx, ry, rz, elbow_angle], ... ]. 
+            Cartesian pose trajectory of the end effector. 
+
+        Returns
+        ----------
+        q_traj: List[np.ndarray] 
+            List of np.ndarray of joint positions with size of joint_dof of robot.
+        """
+
         q_current = copy.deepcopy(q_start)
         q_traj = []
         for cartesian_pose in cartesian_pose_traj:

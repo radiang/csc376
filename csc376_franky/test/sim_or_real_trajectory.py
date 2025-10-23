@@ -7,7 +7,7 @@ import numpy as np
 def main():
     np.set_printoptions(precision=4, suppress=True,)    
 
-    simulation = True # Radian: I don't like using sim bool
+    simulation = False # Radian: I don't like using sim bool
     panda_rtb_model = rtb.models.Panda()
 
     if simulation:
@@ -24,7 +24,7 @@ def main():
     relative_acc_factor = 0.01
     relative_jerk_factor = 0.05
 
-    motion_generator = RuckigMotionGenerator(relative_vel_factor, relative_acc_factor, relative_jerk_factor)
+    motion_generator = RuckigMotionGenerator()
     
     # III. Calculate SE3 goals
     se3_targets = []
@@ -51,7 +51,8 @@ def main():
     se3_current = se3_start
     q_current = q_start
     for se3_target in se3_targets:
-        cartesian_traj, dt = motion_generator.calculate_cartesian_pose_trajectory(se3_current, se3_target) 
+        cartesian_traj, dt = motion_generator.calculate_cartesian_pose_trajectory(se3_current, se3_target,
+                                                                                  relative_vel_factor, relative_acc_factor, relative_jerk_factor) 
         q_traj = motion_generator.cartesian_pose_to_joint_trajectory(panda_rtb_model, q_current, cartesian_traj)
         q_trajs.append(q_traj)
         se3_current = se3_target
