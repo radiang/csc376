@@ -1,8 +1,10 @@
+#include <pybind11/chrono.h>
+#include <pybind11/eigen.h>
+#include <pybind11/functional.h> // Needed to bind std::function
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <pybind11/eigen.h>
-#include <pybind11/chrono.h>
-#include <pybind11/numpy.h>
+
 #include <franka/robot_state.h>
 #include <franka/gripper_state.h>
 #include "csc376_franky/franka_joint_trajectory_controller.hpp"
