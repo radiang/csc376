@@ -7,7 +7,7 @@ import numpy as np
 def main():
     np.set_printoptions(precision=4, suppress=True,)    
 
-    simulation = False # Radian: I don't like using sim bool
+    simulation = True # Radian: I don't like using sim bool
     panda_rtb_model = rtb.models.Panda()
 
     if simulation:
@@ -64,6 +64,10 @@ def main():
         if yes_or_else != "yes":
             print("User did not type [yes], will not run on sim/real robot")
             return robot
+        def trajectory_callback(index):
+            print(f"At trajectory index: {index}")
+            print(f"Commanding joint positions: {q_traj[index]}")
+        robot.set_trajectory_callback(trajectory_callback)
         robot.run_joint_trajectory(q_traj, dt)
     
     return robot

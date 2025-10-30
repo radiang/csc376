@@ -31,6 +31,8 @@ class RtbVisualizer:
         self._rtb_rendering_thread = threading.Thread(target=self.__run_render_loop, daemon=True)
         self._rtb_rendering_thread.start()
 
+        self.trajectory_callback = lambda index: None
+
     def move_gripper(self, target_width: float, speed: float):
         """ Moves the simulations Franka gripper to the target_width.
 
@@ -64,6 +66,15 @@ class RtbVisualizer:
             return True
         else:
             return False
+    def set_trajectory_callback(self, callback):
+        """ Sets a callback function that is called with the current trajectory index during execution.
+
+        Parameters
+        ----------
+        callback: function
+            A function that takes an integer index as input.
+        """
+        self.trajectory_callback = callback
 
     def run_joint_trajectory(self, q_trajectory: List[np.ndarray], dt: float):
         """ Updates the rtb_robot_model's (that was passed to the env) joint positions
@@ -77,8 +88,9 @@ class RtbVisualizer:
         self.dt: float 
             Delta time between trajectory points of the cartsian_pose_traj.
         """
-        for q in q_trajectory:
+        for i, q in enumerate(q_trajectory):
             self.rtb_robot_model.q = q
+            self.trajectory_callback(i)
             time.sleep(dt)
 
     def stop(self):

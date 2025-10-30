@@ -38,13 +38,17 @@ public:
     static void handleSignal(int signal);
     void join();
     void stop();
+    void setTrajectoryCallback(const std::function<void(int)>& trajectory_callback);
 private:
     std::unique_ptr<franka::Model> model_;
     std::unique_ptr<franka::Robot> robot_;
     std::array<double, 7> k_gains_;
     std::array<double, 7> d_gains_;
-    
-    void setCommandJointPositions(const Eigen::Ref<const Eigen::Vector<double, 7>>&  joint_positions);
+
+    std::mutex trajectory_callback_mtx_;
+    std::function<void(int)> trajectory_callback_;
+
+    void setCommandJointPositions(const Eigen::Ref<const Eigen::Matrix<double, 7, 1>>&  joint_positions);
     franka::Torques impedanceControlCallback(
         const franka::RobotState& state, franka::Duration /*period*/);
     std::thread control_thread_;
@@ -54,7 +58,7 @@ private:
     std::array<double, 7> current_joint_positions_;
 
     std::mutex command_state_mtx_;
-    Eigen::Vector<double, 7> command_joint_positions_;
+    Eigen::Matrix<double, 7, 1> command_joint_positions_;
 
     static std::atomic<bool> stop_command_;
 

@@ -149,6 +149,9 @@ void bind_franka_trajectory_controller(py::module &m) {
              "Wait for the control thread to finish")
         .def("stop", &csc376_franky::FrankaJointTrajectoryController::stop,
              "Stop all robot functions, including the currently running trajectory")
+        .def("set_trajectory_callback", &csc376_franky::FrankaJointTrajectoryController::setTrajectoryCallback,
+             py::arg("trajectory_callback"),
+             "Set a callback function that is called with the current trajectory index during execution")
         .def("run_joint_trajectory", &csc376_franky::FrankaJointTrajectoryController::runJointTrajectory,
              py::arg("joint_trajectory"), py::arg("dt"),
              "Execute joint trajectory (N×7 matrix, dt in seconds). Returns ErrorCode.")

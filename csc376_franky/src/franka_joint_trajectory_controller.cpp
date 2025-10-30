@@ -48,6 +48,7 @@ FrankaJointTrajectoryController::FrankaJointTrajectoryController(const std::stri
             std::placeholders::_1,
             std::placeholders::_2));
     };
+    trajectory_callback_ = [](int){}; // Default empty callback
     control_thread_ = std::thread(robot_control_func);
 }
 
@@ -74,6 +75,14 @@ void FrankaJointTrajectoryController::handleSignal(int signal) {
         // Re-raise signal to allow Python to handle it and terminate if needed
         std::raise(SIGINT);
     }
+}
+
+void FrankaJointTrajectoryController::setTrajectoryCallback(
+    const std::function<void(int)>& trajectory_callback)
+{
+    std::lock_guard<std::mutex> lock(trajectory_callback_mtx_);
+    trajectory_callback_ = trajectory_callback;
+    return;
 }
 
 void FrankaJointTrajectoryController::stop()
@@ -112,7 +121,7 @@ ErrorCodes FrankaJointTrajectoryController::runJointTrajectory(
 
     // Trajectory validation
     Eigen::MatrixXd joint_differences = computeRowDifferences(joint_trajectory);
-    Eigen::Vector<double, 7> max_joint_differences = joint_differences.colwise().maxCoeff();
+    Eigen::Matrix<double, 7, 1> max_joint_differences = joint_differences.colwise().maxCoeff();
     for (int i = 0; i < 7; ++i)
     {
         if (max_joint_differences(i) > MAX_JOINT_DIFFERENCE_)
@@ -122,7 +131,7 @@ ErrorCodes FrankaJointTrajectoryController::runJointTrajectory(
             return ErrorCodes::JointDistancesAboveMaxJointDifference;
         }
     }
-    Eigen::Vector<double, 7> max_joint_velocities = (joint_differences / dt).colwise().maxCoeff();
+    Eigen::Matrix<double, 7, 1> max_joint_velocities = (joint_differences / dt).colwise().maxCoeff();
     for (int i = 0; i < 7; ++i)
     {
         if (max_joint_velocities(i) > MAX_JOINT_VELOCITIES_[i] * 0.3)
@@ -135,9 +144,11 @@ ErrorCodes FrankaJointTrajectoryController::runJointTrajectory(
     }
 
     // Run trajectory
+    std::lock_guard<std::mutex> lock(trajectory_callback_mtx_);
     for (int i = 0; i < joint_trajectory.rows(); ++i) 
     {
         setCommandJointPositions(joint_trajectory.row(i));
+        trajectory_callback_(i);
         std::this_thread::sleep_for(std::chrono::duration<float>(dt));
         if(stop_command_.load())
         {
@@ -161,7 +172,7 @@ franka::RobotState FrankaJointTrajectoryController::getCurrentRobotState()
 }
 
 void FrankaJointTrajectoryController::setCommandJointPositions(
-    const Eigen::Ref<const Eigen::Vector<double, 7>>& joint_positions)
+    const Eigen::Ref<const Eigen::Matrix<double, 7, 1>>& joint_positions)
 {
     std::lock_guard<std::mutex> lock(command_state_mtx_);
     command_joint_positions_ = joint_positions;
