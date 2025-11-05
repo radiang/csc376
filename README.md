@@ -41,6 +41,7 @@ Install csc376 franky:
 ```bash
 conda activate csc376
 pip install pybind11
+git clone https://github.com/radiang/csc376.git
 cd csc376_franky
 pip install .
 ```
@@ -67,12 +68,14 @@ sudo nano /etc/security/limits.conf
 ```
 
 Add these:
+```bash
 @realtime soft rtprio 99
 @realtime soft priority 99
 @realtime soft memlock 102400
 @realtime hard rtprio 99
 @realtime hard priority 99
 @realtime hard memlock 102400
+```
 
 ```bash
 sudo groupadd -r realtime
