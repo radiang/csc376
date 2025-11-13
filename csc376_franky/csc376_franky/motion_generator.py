@@ -72,7 +72,7 @@ def rotation_vector_to_joint_config(model, q_current, RV_new):
     
 class RuckigMotionGenerator:
     def __init__(self):
-        self.dt = 0.05
+        self.dt = 0.03
         self.ruckig = Ruckig(dofs=7, delta_time=self.dt)
         self.PANDA_VEL_LIM_CARTESIAN = np.array([3.0, 3.0, 3.0, 2.5, 2.5, 2.5, 2.62])   # m/s
         self.PANDA_ACC_LIM_CARTESIAN =  np.array([9.0, 9.0, 9.0, 17.0, 17.0, 17.0, 10.0]) # m/s²
