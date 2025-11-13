@@ -24,9 +24,17 @@ def main():
     q_start = csc376_franky_robot.get_current_joint_positions()
     visualizer = RtbVisualizer(panda_rtb_model, q_start)
     
+    motions = [
+    	SE3.Tz(0.1),
+    	SE3.Tz(-0.1),
+    	SE3.Ty(0.2)
+    ]
+    
+    for motion in motions:
+    
     # III. Calculate your goal
     se3_start   = panda_rtb_model.fkine(q_start)
-    se3_target = SE3.Ty(0.1) * se3_start # Relative to start position, pre-multiply for world frame reference
+    se3_target = SE3.Ty(-0.1) * se3_start # Relative to start position, pre-multiply for world frame reference
     print("q_start", q_start)
     print("se3_start", se3_start)
     print("se3_target", se3_target)

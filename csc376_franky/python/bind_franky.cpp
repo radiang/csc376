@@ -38,6 +38,7 @@ void bind_error_codes(py::module &m) {
         .value("JointVelocitiesAboveMaximumAllowed", csc376_franky::ErrorCodes::JointVelocitiesAboveMaximumAllowed)
         .value("DtIsNegative", csc376_franky::ErrorCodes::DtIsNegative)
         .value("DtIsSmallerThanAllowed", csc376_franky::ErrorCodes::DtIsSmallerThanAllowed)
+        .value("JointTrajectoryDoesNotStartAtCurrentPosition", csc376_franky::ErrorCodes::JointTrajectoryDoesNotStartAtCurrentPosition)
         .export_values();
 }
 

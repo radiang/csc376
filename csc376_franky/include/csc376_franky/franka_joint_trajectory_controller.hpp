@@ -23,6 +23,7 @@ enum class ErrorCodes
     DtIsNegative = -4, 
     DtIsSmallerThanAllowed = -5,
     Interrupted = -6,
+    JointTrajectoryDoesNotStartAtCurrentPosition = -7,
 };
 
 class FrankaJointTrajectoryController
@@ -49,6 +50,10 @@ private:
     std::function<void(int)> trajectory_callback_;
 
     void setCommandJointPositions(const Eigen::Ref<const Eigen::Matrix<double, 7, 1>>&  joint_positions);
+    void setCommandJointPositions(
+        const Eigen::Ref<const Eigen::Matrix<double, 7, 1>>& joint_positions, 
+        const Eigen::Ref<const Eigen::Matrix<double, 7, 1>>& joint_velocities);
+
     franka::Torques impedanceControlCallback(
         const franka::RobotState& state, franka::Duration /*period*/);
     std::thread control_thread_;
@@ -59,11 +64,12 @@ private:
 
     std::mutex command_state_mtx_;
     Eigen::Matrix<double, 7, 1> command_joint_positions_;
+    Eigen::Matrix<double, 7, 1> command_joint_velocities_;
 
     static std::atomic<bool> stop_command_;
 
-    static constexpr double MAX_JOINT_DIFFERENCE_ = 0.0174; // rad ~ 1 deg 
-    static constexpr double MAX_JOINT_DIFFERENCE_IMPEDENCE = 0.025;
+    static constexpr double MAX_JOINT_DIFFERENCE_ = 0.025; // rad ~ 1 deg 
+    static constexpr double MAX_JOINT_DIFFERENCE_IMPEDENCE = 0.05;
     static constexpr std::array<double, 7> MAX_JOINT_VELOCITIES_ = {3.0, 3.0, 3.0, 2.5, 2.5, 2.5, 2.62}; // rad/s 
 };
 
