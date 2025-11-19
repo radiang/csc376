@@ -46,6 +46,12 @@ cd csc376_franky
 pip install .
 ```
 
+In a venv (like wsl), if pybind11 cannot by found due to pip looking into some `/tmp/...` directory, use:
+
+```bash
+pip install --no-build-isolation .
+```
+
 # Run
 
 Prerequisites:
