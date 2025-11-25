@@ -24,6 +24,7 @@ enum class ErrorCodes
     DtIsSmallerThanAllowed = -5,
     Interrupted = -6,
     JointTrajectoryDoesNotStartAtCurrentPosition = -7,
+    TrajectorySizeLessThanTwo = -8,
 };
 
 class FrankaJointTrajectoryController

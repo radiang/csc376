@@ -121,6 +121,10 @@ ErrorCodes FrankaJointTrajectoryController::runJointTrajectory(
         std::cout << "Trajectory must have 7 columns (joints)" << std::endl;
         return ErrorCodes::JointSizeNotSeven;
     }
+    if (joint_trajectory.rows() < 2){
+        std::cout << "Trajectory must have at least 2 points" << std::endl;
+        return ErrorCodes::TrajectorySizeLessThanTwo;
+    }
     
     const auto current_jps = getCurrentJointPositions();
     for (int i = 0; i < 7; ++i)
@@ -173,6 +177,8 @@ ErrorCodes FrankaJointTrajectoryController::runJointTrajectory(
     // std::cout << joint_velocities.rows() << std::endl;
     // std::cout << joint_velocities << std::endl;
     // return ErrorCodes::JointTrajectoryDoesNotStartAtCurrentPosition;
+
+    std::cout << "Every trajectory check is passed" << std::endl;
 
     // Run trajectory
     std::lock_guard<std::mutex> lock(trajectory_callback_mtx_);

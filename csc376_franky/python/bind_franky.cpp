@@ -39,6 +39,7 @@ void bind_error_codes(py::module &m) {
         .value("DtIsNegative", csc376_franky::ErrorCodes::DtIsNegative)
         .value("DtIsSmallerThanAllowed", csc376_franky::ErrorCodes::DtIsSmallerThanAllowed)
         .value("JointTrajectoryDoesNotStartAtCurrentPosition", csc376_franky::ErrorCodes::JointTrajectoryDoesNotStartAtCurrentPosition)
+        .value("TrajectorySizeLessThanTwo", csc376_franky::ErrorCodes::TrajectorySizeLessThanTwo)
         .export_values();
 }
 
